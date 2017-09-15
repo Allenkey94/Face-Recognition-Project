@@ -1,0 +1,38 @@
+function [PCAfeat,eigVec,l] = jake_PCA(feat)
+
+
+% Function for finding the Principal Components and the
+% transformed  features for a data input ('feat') 
+% with observations arranged row-wise by finding
+% the eigenvectors of the smallest eigenvalues
+% of a matrix feat' * L * feat
+
+% L(i,j) = -1, class(feat(i,:)) == class(feat(j,:))
+%        =  0, class(feat(i,:)) ~= class(feat(j,:))
+% L(i,i) = sum(L:,i)
+
+% L being the generalised Laplacian of similarities
+NumIm = size(feat,1) ;
+NumVar= size(feat,2) ;
+
+% centralise feature data
+feat = bsxfun(@minus,feat,mean(feat)) ;
+
+% build Laplacian matrix
+L = repmat(-1,NumIm) ;
+L = L - diag(sum(L)) ;
+
+Y = feat' * feat ;
+% find eigenvectors
+[eigVec, eigVal] = eig(Y,'vector') ; 
+% sort eigenvectors in order of maximum eigenvalues
+[eigVal,index] = sort(eigVal,'descend') ;
+eigVec = eigVec(:,index) ;
+
+Find the number of vectors that contain 90% of the variance
+g = cumsum(eigVal) ;
+x = (g / g(end)) >= 0.9 ;
+l = find(x,1) ;
+
+% transform features using principal components
+PCAfeat = feat * eigVec ; 
