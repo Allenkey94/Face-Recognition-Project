@@ -1,0 +1,26 @@
+function x = validate_knn(valfeat, vallabels, trainfeat, trainlabels, k)
+% function for finding the classification of the validation features
+% (valfeat) by using the knn method on the training data (trainfeat)
+% and comparing to the known labels to measure accuracy
+
+for j = 1:size(valfeat, 1)
+    for i = 1:size(trainfeat, 1)
+        distance(i,j) = norm(valfeat(j,:) - trainfeat(i,:)) ;
+    end
+end
+
+[Dist,index] = sort(distance) ;
+
+for j = 1:size(valfeat, 1)
+    z = trainlabels(index(1:k,j)) ;
+    c = unique(z,'stable') ;
+
+    for i = 1:numel(c)
+        d(i) = sum(z==c(i)) ;
+    end
+
+    [Max,indMax] = max(d) ;
+    x(j) = c(indMax) ;
+end
+
+correct = sum(x == vallabels)/length(vallabels)
