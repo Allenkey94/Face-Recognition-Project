@@ -1,0 +1,71 @@
+function [TP,TN,FP,FN] = pairwise_validation(scores,label1,label2,threshold,varargin)
+% function for pairwise validating the scores.
+% mode - 'same' scores are from validating a set against itself, matrix is symmetric
+%        so only consider values below the diagonal
+% any other mode considers the whole scores array
+
+opts.mode = 'same' ;
+
+[opts, varargin] = vl_argparse(opts, varargin) ;
+
+l1 = size(scores,1) ;
+l2 = size(scores,2) ;
+
+TP = 0 ;
+TN = 0 ;
+FP = 0 ;
+FN = 0 ;
+
+switch opts.mode
+    
+    case 'same'
+        for i = 1:l1
+            for j = i+1:l2
+                
+                if scores(i,j) > threshold
+                    if label1(i) == label2(j)
+                        TP = TP + 1 ;
+                    else
+                        FP = FP + 1 ;
+                    end
+                else
+                    if label1(i) == label2(j)
+                        FN = FN + 1 ;
+                    else
+                        TN = TN + 1 ;
+                    end
+                end
+                
+            end
+        end
+        
+    case 'different'
+        for i = 1:l1
+            for j = 1:l2
+                
+                if scores(i,j) > threshold
+                    if label1(i) == label2(j)
+                        TP = TP + 1 ;
+                    else
+                        FP = FP + 1 ;
+                    end
+                else
+                    if label1(i) == label2(j)
+                        FN = FN + 1 ;
+                    else
+                        TN = TN + 1 ;
+                    end
+                end
+                
+            end
+        end
+
+end
+
+
+TruePostiveRate = TP / (TP + FN)
+TrueNegativeRate = TN / (TN + FP)
+FalsePostiveRate = FP / (TN + FP)
+FalseNegativeRate = FN / (TP + FN)
+
+Accuracy = (TP + TN) / (TP+TN+FP+FN)
