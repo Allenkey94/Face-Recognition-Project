@@ -1,0 +1,91 @@
+% Script designed to collect all face images of data 'Actors'
+% and collect into a single image database with given label 
+% and set infomation
+
+%clear all
+%% 
+
+% Set the directory paths for the input and output
+opts.dataDir = [vl_rootnn '/data/Airport/Faces'] ;
+opts.expDir = [vl_rootnn '/data/Airport'] ;
+opts.imdbPath = [opts.expDir '/imdbA.mat'] ;
+
+%% 
+
+if ~exist(opts.imdbPath)
+    %% 
+
+    % Count the number of categories/folders
+    NumCats = numel(dir(opts.dataDir)) - 2 ;
+    
+    % Make the labels for categories the title of the folders used
+    labels = [1:NumCats] ;
+    
+    folders = extractfield(dir(opts.dataDir), 'name') ;
+    folders = folders(3:end) ;
+
+    sample = 1 ; % Designation for first image
+
+    %% 
+    
+      for l = 1:NumCats  % Iterate labels
+      
+          % Set titles for each image of current folder
+          titles = extractfield(dir([opts.dataDir...
+              sprintf('/%s/*.ppm',folders{l})]),'name')';
+          Numtitles = numel(titles); % Count images in folder
+      
+        for i = 1:Numtitles  % Iterate for each image
+          % Read image
+          
+          % Use try/catch statement to avoid faulty jpegs
+          try
+              im = imread(sprintf('%s/%s/%s',...
+                  opts.dataDir, folders{l}, titles{i}),'ppm') ;
+          catch
+              continue
+          end
+      
+          % Store it, along with label and train/val set information
+          % resize image to standard size
+          images(:,:,:,sample) = single(imresize(im, [224 224])) ;
+          label(sample) = labels(l) ;
+          passenger(sample) = folders(l) ;
+          
+          %Create train(1) and validate(2) labels
+          if i < 6
+              set(sample) = 2 ;
+          else
+              set(sample) = 1;
+          end
+          
+          sample = sample + 1 ;
+        end
+        
+        sprintf('Passenger %d/%d complete', labels(l), NumCats)
+      
+      end
+        
+        %% 
+    
+    % Remove mean over whole dataset
+    images = bsxfun(@minus, images, net.meta.normalization.averageImage) ;
+
+    %%  
+    
+    % Store results in the imdb struct
+    imdbA.images = images ;
+    imdbA.labels = label ;
+    imdbA.set = set ;
+    imdbA.passenger = passenger ;
+    
+    mkdir(fileparts(opts.imdbPath)) ;
+    save(opts.imdbPath, '-struct', 'imdbA','-v7.3')
+    
+    fprintf('build_airport_imdbA completed')
+    
+else
+    
+    fprintf('imdbA.mat already exists')
+    
+end
