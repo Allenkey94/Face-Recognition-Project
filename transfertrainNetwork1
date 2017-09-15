@@ -1,0 +1,92 @@
+function net = transfertrainNetwork(net, imdb, varargin)
+
+% Function for transfer learning of a network 
+% done by training only the last convolution layer of a pretrained
+% network, specifically the vgg faces example network
+%
+% Input: net, must be built for the imdb before using this function
+
+% Variable inputs with default values
+opts.useGPU = [] ;
+opts.Batchsize = 64 ;
+opts.mode = 'none' ;
+opts.connserveMemory = true ;
+opts.learningrate = 0.001 ;
+opts.iterations = 25 ;
+opts.backPropDepth = 2 ;
+
+[opts, varargin] = vl_argparse(opts, varargin) ;
+
+% Prepare network for chosen method
+useGPU = opts.useGPU ;
+if ~isempty(useGPU)
+    net = vl_simplenn_move(net,'gpu') ;
+else
+    net = vl_simplenn_move(net,'cpu') ;
+end
+
+% Separate the indexes for training and validation set
+% Randomise these indexes to prevent overfitting to initial identity
+MaxIm = size(imdb.images,4) ;
+train = find(imdb.set==1) ;
+    train = train(randperm(numel(train))) ;
+val = find(imdb.set==2) ;
+    val = val(randperm(numel(val))) ;
+
+% Set if training on full database or just training images
+switch opts.mode
+    case 'train'
+        set = train ;
+    otherwise
+        set = [train, val] ;
+end
+
+res = [] ;
+
+for l = 1:opts.iterations
+    
+    error = 0 ;
+    set = set(randperm(numel(set))) ;
+    
+    % Find the indexes for each batch of images
+    % or less if less than the batchsize remaining
+    for t = 1:opts.Batchsize:numel(set)
+        Batchsize = min(opts.Batchsize, numel(set) -t +1) ;
+        BatchStart = t ;
+        BatchEnd = min(t+opts.Batchsize-1, numel(set)) ;
+        Batch = set(BatchStart:BatchEnd) ;
+
+        [im,labels] = getBatch(imdb, Batch, useGPU) ;
+
+        dzdy = 1 ;
+
+        net.layers{end-1}.precious = 1 ;
+        net.layers{end}.class = labels ;
+        res = vl_simplenn(net, im, dzdy, [],...
+            'conserveMemory', opts.connserveMemory,...
+            'backPropDepth', opts.backPropDepth) ;
+
+        for j = 2:-1:1
+            update = - opts.learningrate * (res(36).dzdw{j}/Batchsize) ;
+            net.layers{36}.weights{j} = ...
+                net.layers{36}.weights{j} + update ;
+        end
+        
+    end
+    correcttrain = validate(net,imdb,'useGPU',1,'mode','train') ;
+    correctval = validate(net,imdb,'useGPU',1) ;
+    sprintf(['Iteration %d completed, %d train error rate, '...
+        '\n %d validation error rate'],l,1-correcttrain,1-correctval)
+end
+%--------------------------------------------------------------------------
+function [images, labels] = GetBatch(imdb, batch, useGPU)
+%--------------------------------------------------------------------------
+
+images = imdb.images(:,:,:,batch) ;
+labels = imdb.labels(batch) ;
+
+if exist(useGPU)
+    images = gpuArray(images) ;
+end
+
+%--------------------------------------------------------------------------
