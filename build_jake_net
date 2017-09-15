@@ -1,0 +1,18 @@
+function jake_net = build_jake_net()
+
+opts.dataDir = [vl_rootnn '/data/Actors/download'] ;
+
+net = load('data/models/vgg-face.mat') ;
+
+jake_net = net;
+jake_net.layers = jake_net.layers(1:end-2);
+
+    labels = extractfield(dir(opts.dataDir),'name');
+    labels = labels(3:end)';
+
+    jake_net.meta.classes.name = labels;
+    jake_net.meta.classes.description = [1:length(labels)];
+
+jake_net = vl_simplenn_tidy(jake_net);
+
+end
