@@ -1,0 +1,41 @@
+function Score = jake_score(feat1,feat2)
+
+% funtion returns the score (correlation) between all the rows of feat1 with
+% all the rows of feat2, ensure data is centred before.
+% for Score(i,j), the row i corresponds to the scores of the ith feature of
+% feat1, the column j corresponds to the score of the jth feature of feat2
+
+% if one set of features provided, scores are compared with itself
+if nargin == 1
+    feat2 = feat1 ;
+end
+
+% find number of features
+l1 = size(feat1,1) ;
+l2 = size(feat2,1) ;
+
+% normalise each feature to length 1, saves calculating norm for each
+% iteration
+feat1 = normr(feat1) ;
+feat2 = normr(feat2) ;
+
+% prebuild score matrix to save time
+Score = zeros(l1,l2) ;
+
+% if finding score with itself, scores will be symmetrical across the
+% diagonal, so avoid repeat calculations
+if nargin == 1
+    for i = 1:l1
+        for j = i:l2
+            Score(i,j) = (feat1(i,:) * feat2(j,:)') ;
+
+            Score(j,i) = Score(i,j) ;
+        end
+    end
+else
+    for i = 1:l1
+        for j = 1:l2
+            Score(i,j) = (feat1(i,:) * feat2(j,:)') ;
+        end
+    end
+end
