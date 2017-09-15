@@ -42,6 +42,7 @@ switch opts.mode
 end
 
 res = [] ;
+net.layers{end-1}.precious = 1 ;
 
 for l = 1:opts.iterations
     
@@ -60,12 +61,12 @@ for l = 1:opts.iterations
 
         dzdy = 1 ;
 
-        net.layers{end-1}.precious = 1 ;
         net.layers{end}.class = labels ;
         res = vl_simplenn(net, im, dzdy, [],...
             'conserveMemory', opts.connserveMemory,...
             'backPropDepth', opts.backPropDepth) ;
 
+        % perform gradient descent on the network weights
         for j = 2:-1:1
             update = - opts.learningrate * (res(36).dzdw{j}/Batchsize) ;
             net.layers{36}.weights{j} = ...
@@ -73,6 +74,8 @@ for l = 1:opts.iterations
         end
         
     end
+    
+    % calculate accuracy for this iteration
     correcttrain = validate(net,imdb,'useGPU',1,'mode','train') ;
     correctval = validate(net,imdb,'useGPU',1) ;
     sprintf(['Iteration %d completed, %d train error rate, '...
@@ -81,6 +84,7 @@ end
 %--------------------------------------------------------------------------
 function [images, labels] = GetBatch(imdb, batch, useGPU)
 %--------------------------------------------------------------------------
+% function for extracting batches of images from a database
 
 images = imdb.images(:,:,:,batch) ;
 labels = imdb.labels(batch) ;
