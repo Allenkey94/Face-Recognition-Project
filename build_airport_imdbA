@@ -1,4 +1,4 @@
-% Script designed to collect all face images of data 'Actors'
+% Script designed to collect all face images of data 'Airport'
 % and collect into a single image database with given label 
 % and set infomation
 
@@ -51,16 +51,6 @@ if ~exist(opts.imdbPath)
           images(:,:,:,sample) = single(imresize(im, [224 224])) ;
           label(sample) = labels(l) ;
           passenger(sample) = folders(l) ;
-          
-          %Create train(1) and validate(2) labels
-          if i < 6
-              set(sample) = 2 ;
-          else
-              set(sample) = 1;
-          end
-          
-          sample = sample + 1 ;
-        end
         
         sprintf('Passenger %d/%d complete', labels(l), NumCats)
       
@@ -76,7 +66,6 @@ if ~exist(opts.imdbPath)
     % Store results in the imdb struct
     imdbA.images = images ;
     imdbA.labels = label ;
-    imdbA.set = set ;
     imdbA.passenger = passenger ;
     
     mkdir(fileparts(opts.imdbPath)) ;
