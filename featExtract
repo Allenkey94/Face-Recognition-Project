@@ -1,0 +1,54 @@
+function [feat,labels] = featExtract(net, imdb, varargin)
+
+% function for extracting the final feature set ( output of layer 35 )
+% of a trained network 'net' of the target images from the image
+% database 'imdb'
+% mode - 'none' (deafault) extract features of all images
+       - 'train' extract features of training images
+       - 'val' extract features of validation images
+% number - select number of images to extract for each identity
+
+opts.mode = 'none' ;
+opts.number = [] ;
+
+[opts, varargin] = vl_argparse(opts, varargin) ;
+
+% find index for desired set
+switch opts.mode
+    case 'val'
+        x = find(imdb.set == 2) ;
+    case 'train'
+        x = find(imdb.set == 1) ;
+    otherwise
+        x = 1:length(imdb.labels) ;
+end
+
+% find corresponding labels
+labels = imdb.labels(x) ;
+
+n = opts.number ;
+if ~isempty(n) ;
+    z = [] ;
+    for i = 1:max(labels)
+        y = find(labels == i) ;
+        z = [z, y(1:n)] ;
+    end
+    x = x(z) ;
+    labels = labels(z) ;
+end
+
+feat = [] ;
+net = vl_simplenn_move(net,'gpu') ;
+
+for j = 1:32:length(x)
+    k = min(31,length(x)-j) ;
+    im_ = gpuArray(imdb.images(:,:,:,(x(j:j+k)))) ; %extract images
+
+    % run through network, conserveMemory is turned on
+    res = vl_simplenn(net, im_, [], [], 'conserveMemory', true) ;
+    feat = [feat, squeeze(gather(res(36).x))] ; %extract desired output
+end
+
+% transpose for use with PCA function
+feat = feat' ; 
+labels = imdb.labels(x) ;
