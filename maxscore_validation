@@ -1,0 +1,28 @@
+function x = maxscore_validation(scores,labels,threshold) ;
+
+x = zeros(1,size(scores,1)) ;
+
+l1 = size(scores,1) ;
+
+if nargin < 3
+    for i = 1:l1
+        [~,best] = sort(scores(i,:),'descend') ;
+        x(i) = labels(best(2)) ;
+    end
+
+    correct = sum(x == labels)/l1
+else
+    
+    for i = 1:l1
+        [bestscore,best] = sort(scores(i,:),'descend') ;
+        x(i,1) = bestscore(2) ;
+        x(i,2) = labels(best(2)) ;
+    end
+
+    y = x(:,1) > threshold ;
+    z(1,1) = sum((x(y,2)' == labels(y))) / l1 ;
+    z(1,2) = sum((x(y,2)' ~= labels(y))) / l1 ;
+    z(1,3) = sum(~y) / l1 ;
+    
+    x = z ;
+end
